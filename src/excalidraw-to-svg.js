@@ -54,16 +54,25 @@ const excalidrawToSvg = (diagram) => {
     runScripts: "dangerously",
     resources: "usable",
     beforeParse(window) {
-      window.nodeRequire = require;
-      window.require = require;
+      const { Canvas, CanvasRenderingContext2D, Path2D } = require("skia-canvas");
+      window.HTMLCanvasElement.prototype.getContext = function(type) {
+        return new Canvas(1, 1).getContext(type);
+      };
+      window.nodeRequire = (module) => {
+        if (module === "canvas") {
+          return {
+            Context2d: CanvasRenderingContext2D,
+            createCanvas: (w, h) => new Canvas(w, h),
+            Path2D,
+          };
+        }
+        return require(module);
+      };
+      window.require = window.nodeRequire;
     },
   });
 
-  // jsdom does not provide a canvas implementation, so use node-canvas
-  const { createCanvas } = require("canvas");
-  dom.window.HTMLCanvasElement.prototype.getContext = function(type) {
-    return createCanvas(1, 1).getContext(type);
-  };
+
 
   // pull the svg and return that Node
   // since this happens asyncronously, we will wait for it to be available
