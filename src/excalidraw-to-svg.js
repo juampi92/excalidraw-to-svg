@@ -30,9 +30,6 @@ const excalidrawToSvg = (diagram) => {
 		<body>
 			<script>
 
-        // mock CanvasRenderingContext2D (which currently blows up in the canvas-5-polyfill)
-        class CanvasRenderingContext2D {}
-
         // load canvas-5-polyfill
         ${path2DPolyfill}
 
@@ -56,7 +53,17 @@ const excalidrawToSvg = (diagram) => {
   const dom = new JSDOM(exportScript, {
     runScripts: "dangerously",
     resources: "usable",
+    beforeParse(window) {
+      window.nodeRequire = require;
+      window.require = require;
+    },
   });
+
+  // jsdom does not provide a canvas implementation, so use node-canvas
+  const { createCanvas } = require("canvas");
+  dom.window.HTMLCanvasElement.prototype.getContext = function(type) {
+    return createCanvas(1, 1).getContext(type);
+  };
 
   // pull the svg and return that Node
   // since this happens asyncronously, we will wait for it to be available
